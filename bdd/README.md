@@ -13,7 +13,7 @@ Program expects single line formula to be passed to stdin.
 
 Formula is a sequence of variables, parenthesis and operators with arbitrary number of space symbols between them.
 
-Variable is a string "x<num>", where <num> is arbitrary positive number in decimal. Consider not to skip any variable numbers for more efficiency.
+Variable is a string "x\<num\>", where \<num\> is arbitrary positive number in decimal. Consider not to skip any variable numbers for more efficiency.
 
 Parenthesis are symbols "(", ")" for standard operator priority altering.
 
