@@ -7,6 +7,7 @@
 
 using std::cin;
 using std::cout;
+using std::cerr;
 using std::endl;
 using std::vector;
 
@@ -154,8 +155,8 @@ class Formula final {
                 Node(size_t k) : kind(Kind::VAR), var(k) {};
         };
         vector<Node> nodes;
-        size_t max_n;
         size_t min_n;        
+        size_t max_n;
 
         // Substitution kind: subformula or substituting constant
         typedef enum SubKind {
@@ -170,8 +171,8 @@ class Formula final {
                 size_t start, end;
                 bool sub;
 
-                SubNode(bool b) : kind(SUBST), sub(b), start(0), end(0) {};
-                SubNode(size_t start, size_t end) : kind(SUBFORMULA), sub(false), start(start), end(end) {};
+                SubNode(bool b) : kind(SUBST), start(0), end(0), sub(b) {};
+                SubNode(size_t start, size_t end) : kind(SUBFORMULA), start(start), end(end), sub(false) {};
         };
 
         // Internal constructor of formula for substitute method
@@ -197,7 +198,7 @@ class Formula final {
             vector<bool> skipped(nodes.size(), false);
 
             // Main cycle
-            for (int i = 0; i < nodes.size(); ++i) {
+            for (size_t i = 0; i < nodes.size(); ++i) {
                 if (nodes[i].kind == Formula::VAR && nodes[i].var != n) { // Not substituted var nodes -- present
                     new_nodes.push(SubNode(i, i));
                 } else if (nodes[i].kind == NOT) { // NOT -- skipped if const in arg, else present
@@ -228,11 +229,11 @@ class Formula final {
                             skipped[i] = true;
                             new_nodes.push(arg2);
                         } else if (arg1.kind == SUBST && arg1.sub == false) {
-                            for (int j = arg2.start; j <= arg2.end; ++j) skipped[j] = true;
+                            for (size_t j = arg2.start; j <= arg2.end; ++j) skipped[j] = true;
                             skipped[i] = true;
                             new_nodes.push(SubNode(true));
                         } else if (arg2.kind == SUBST && arg2.sub == true) {
-                            for (int j = arg1.start; j <= arg1.end; ++j) skipped[j] = true;
+                            for (size_t j = arg1.start; j <= arg1.end; ++j) skipped[j] = true;
                             skipped[i] = true;
                             new_nodes.push(SubNode(true));
                         } else {
@@ -295,7 +296,7 @@ class Formula final {
                 return Formula(vector<Node>(1, Node(fin.sub)), 0, 0);
             } else {
                 vector<Node> res_nodes;
-                for (int i = 0; i < nodes.size(); ++i) {
+                for (size_t i = 0; i < nodes.size(); ++i) {
                     if (!skipped[i]) res_nodes.push_back(nodes[i]);
                 }
                 return Formula(res_nodes, n + 1, this->max_n);
@@ -315,7 +316,7 @@ class Formula final {
             if (t == e) {
                 return t;
             } else {
-                for (int i = 0; i < res.size(); ++i) {
+                for (size_t i = 0; i < res.size(); ++i) {
                     if (res[i] == std::make_tuple("x" + std::to_string(this->min_n), t, e, this->min_n)) {
                         return i;
                     }
@@ -427,7 +428,7 @@ BDD_print(vector<Formula::BDDNode> v) {
     cout << "digraph {" << endl;
     cout << "    0 [shape=rect]" << endl;
     cout << "    1 [shape=rect]" << endl;
-    for (int i = 2; i < v.size(); ++i) {
+    for (size_t i = 2; i < v.size(); ++i) {
         std::string name;
         size_t t, e, x_no;
         std::tie(name, t, e, x_no) = v[i];
@@ -438,7 +439,7 @@ BDD_print(vector<Formula::BDDNode> v) {
 
     // Calculate num of levels 
     size_t max_no = 0;
-    for (int i = 2; i < v.size(); ++i) {
+    for (size_t i = 2; i < v.size(); ++i) {
         std::string name;
         size_t t, e, x_no;
         std::tie(name, t, e, x_no) = v[i];
@@ -450,7 +451,7 @@ BDD_print(vector<Formula::BDDNode> v) {
     cout << "    {rank=same; 0 1}" << endl;
     for (size_t cur_no = 0; cur_no <= max_no; ++cur_no) {
         cout << "    {rank=same; ";
-        for (int i = 2; i < v.size(); ++i) {
+        for (size_t i = 2; i < v.size(); ++i) {
             std::string name;
             size_t t, e, x_no;
             std::tie(name, t, e, x_no) = v[i];
@@ -470,7 +471,7 @@ main() {
     std::string s;
     std::getline(cin, s);
     auto x = formula::Formula(s).BDD();
-    cout << formula::Formula(s) << endl;
+    cerr << formula::Formula(s) << endl;
     formula::BDD_print(x);
     return 0;
 }
