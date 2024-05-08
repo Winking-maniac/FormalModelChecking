@@ -225,14 +225,14 @@ class Formula final {
                         if (nodes[i].kind == IMPL) new_nodes.push(SubNode(!arg1.sub || arg2.sub));
                         skipped[i] = true;
                     } else if (nodes[i].kind == IMPL) { // Non-commutative IMPL -- 4 cases...
-                        if (arg1.kind == SUBST && arg1.sub == true) {
+                        if (arg1.kind == SUBST && arg1.sub) {
                             skipped[i] = true;
                             new_nodes.push(arg2);
-                        } else if (arg1.kind == SUBST && arg1.sub == false) {
+                        } else if (arg1.kind == SUBST && !arg1.sub) {
                             for (size_t j = arg2.start; j <= arg2.end; ++j) skipped[j] = true;
                             skipped[i] = true;
                             new_nodes.push(SubNode(true));
-                        } else if (arg2.kind == SUBST && arg2.sub == true) {
+                        } else if (arg2.kind == SUBST && arg2.sub) {
                             for (size_t j = arg1.start; j <= arg1.end; ++j) skipped[j] = true;
                             skipped[i] = true;
                             new_nodes.push(SubNode(true));

@@ -1,7 +1,7 @@
-SOURCE=my_ltl.cpp fsm.cpp test.cpp
+SOURCE=ltl.cpp fsm.cpp test.cpp
 TARGET=test
 
-CFLAGS = -I. -Wall --std=c++17 -g
+CFLAGS = -I. -Wall -Werror --std=c++17 -g
 
 all: $(TARGET)
 

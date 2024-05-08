@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 ISP RAS (http://www.ispras.ru)
+ * Copyright 2024 Winking-maniac (http://github.com/Winking-maniac)
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -15,116 +15,80 @@
 #pragma once
 
 #include <iostream>
-#include <memory>
 #include <vector>
+#include <utility>
+#include "fsm.h"
+#include <boost/dynamic_bitset.hpp>
+
+using std::vector;
+using std::pair;
 
 namespace model::ltl {
 
-class Formula final {
+
+class LTL final {
 public:
-  enum Kind {
-    ATOM, // Atomic proposition: p
-    NOT,  // Negation: ~A
-    AND,  // Conjunction: (A1 & A2)
-    OR,   // Disjunction: (A1 | A2)
-    IMPL, // Implication: (A1 -> A2)
-    X,    // NeXt time: X{A}
-    G,    // Globally: G{A}
-    F,    // In the Future: F{A}
-    U,    // Until: (A1 U A2)
-    R     // Release: (A1 R A2)
-  };
+    explicit LTL(std::string &s);
+    LTL() = delete;
 
-  const Formula& operator !() const;
-  const Formula& operator &&(const Formula &rhs) const;
-  const Formula& operator ||(const Formula &rhs) const;
-  const Formula& operator >>(const Formula &rhs) const;
+    fsm::Automaton make_buchi();
 
-  friend const Formula& P(const std::string &prop);
-  friend const Formula& X(const Formula &arg);
-  friend const Formula& G(const Formula &arg);
-  friend const Formula& F(const Formula &arg);
-  friend const Formula& U(const Formula &lhs, const Formula &rhs);
-  friend const Formula& R(const Formula &lhs, const Formula &rhs);
-
-  Kind kind() const { return _kind; }
-  std::string prop() const { return _prop; }
-
-  const Formula& arg() const { return *_lhs; }
-  const Formula& lhs() const { return *_lhs; }
-  const Formula& rhs() const { return *_rhs; }
-
-  Formula(Formula&& other) = default;
-  Formula(const Formula& other) = default;
-  Formula(): _kind(ATOM) {};
-  Formula &operator=(Formula &&x) = default;
+    friend std::ostream& operator <<(std::ostream &out, const LTL &l);
 private:
-  Formula(Kind kind, const std::string &prop, const Formula *lhs, const Formula *rhs):
-    _kind(kind), _prop(prop), _lhs(lhs), _rhs(rhs) {}
+    enum Kind {
+        ATOM, // Atomic proposition: p
+        NOT,  // Negation: ~A
+        AND,  // Conjunction: (A1 & A2)
+        OR,   // Disjunction: (A1 | A2)
+        IMPL, // Implication: (A1 -> A2)
+        X,    // NeXt time: X{A}
+        G,    // Globally: G{A}
+        F,    // In the Future: F{A}
+        U,    // Until: (A1 U A2)
+        R     // Release: (A1 R A2)
+    };
 
-  Formula(const std::string &prop):
-    Formula(ATOM, prop, nullptr, nullptr) {}
+    struct Node { 
+        
+        Node(Kind k) : kind(k), x_count(0) {std::cout << "Node " << k << " created" << std::endl;};
+        Kind kind;
+        std::string name;
+        std::pair<unsigned, unsigned> ind;  // indexes of whole subformula
+        std::pair<unsigned, unsigned> arg1; // indexes of subformula for left(or the only) argument of operators
+        std::pair<unsigned, unsigned> arg2; // indexes of subformula for right argument of &, |, ->, U, R
+        size_t x_count;
+    };
 
-  Formula(Kind kind, const Formula *arg):
-    Formula(kind, "", arg, nullptr) {}
+    struct Atom {
+        std::string name;
+        size_t x_count;
+        Atom(std::string s, size_t count) : name(s), x_count(count) {}
+    };
 
-  Formula(Kind kind, const Formula *lhs, const Formula *rhs):
-    Formula(kind, "", lhs, rhs) {}
+    struct ClosureNode {
+        Kind kind;
+        size_t arg1; // index in atoms + closure 
+        size_t arg2; // index in atoms + closure
+        bool neg1, neg2;
 
-  static const Formula& alloc(const Formula *formula) {
-    _formulae.push_back(std::unique_ptr<const Formula>(formula));
-    return *formula;
-  }
+        ClosureNode(Kind k, size_t a1, size_t a2, bool n1, bool n2) : kind(k), arg1(a1),
+                arg2(a2), neg1(n1), neg2(n2) {}
 
-  static std::vector<std::unique_ptr<const Formula>> _formulae;
+        bool operator==(ClosureNode n) {
+            return n.kind == this->kind && n.arg1 == this->arg1 && n.arg2 == this->arg2 &&
+            n.neg1 == this->neg1 && n.neg2 == this->neg2;
+        }
+    };
+    
+    vector<Node> nodes = vector<Node>();
 
-  const Kind _kind;
-  const std::string _prop;
-  const Formula *_lhs;
-  const Formula *_rhs;
+    void propagate_x();
+    vector<Atom> make_atoms();
+    vector<ClosureNode> make_closure(vector<Atom> &);
+
+    static pair<vector<boost::dynamic_bitset<>>, vector<vector<pair<size_t, bool>>>>
+    make_states(vector<Atom> &, vector<ClosureNode> &);
 };
 
-inline const Formula& Formula::operator !() const {
-  return alloc(new Formula(NOT, this));
-}
-
-inline const Formula& Formula::operator &&(const Formula &rhs) const {
-  return alloc(new Formula(AND, this, &rhs));
-}
-
-inline const Formula& Formula::operator ||(const Formula &rhs) const {
-  return alloc(new Formula(OR, this, &rhs));
-}
-
-inline const Formula& Formula::operator >>(const Formula &rhs) const {
-  return alloc(new Formula(IMPL, this, &rhs));
-}
-
-inline const Formula& P(const std::string &prop) {
-  return Formula::alloc(new Formula(prop));
-}
-
-inline const Formula& X(const Formula &arg) {
-  return Formula::alloc(new Formula(Formula::X, &arg));
-}
-
-inline const Formula& G(const Formula &arg) {
-  return Formula::alloc(new Formula(Formula::G, &arg));
-}
-
-inline const Formula& F(const Formula &arg) {
-  return Formula::alloc(new Formula(Formula::F, &arg));
-}
-
-inline const Formula& U(const Formula &lhs, const Formula &rhs) {
-  return Formula::alloc(new Formula(Formula::U, &lhs, &rhs));
-}
-
-inline const Formula& R(const Formula &lhs, const Formula &rhs) {
-  return Formula::alloc(new Formula(Formula::R, &lhs, &rhs));
-}
-
-std::ostream& operator <<(std::ostream &out, const Formula &formula);
-const Formula get_formula();
 
 } // namespace model::ltl

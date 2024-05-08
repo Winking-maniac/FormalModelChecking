@@ -12,7 +12,7 @@
  * the License.
  */
 
-#include "my_ltl.h"
+#include "ltl.h"
 #include "fsm.h"
 
 using namespace model::ltl;
@@ -26,8 +26,9 @@ int main() {
     std::getline(std::cin, s);
     std::cout << LTL(s) << std::endl << std::endl;
 
-    LTL(s).make_buchi();
+    Automaton automaton = LTL(s).make_buchi();
 
+    /*
     Automaton automaton;
     automaton.add_state("s0");
     automaton.add_state("s1");
@@ -40,7 +41,7 @@ int main() {
     automaton.add_trans("s1", {}, "s0");
     automaton.add_trans("s1", {"p", "q"}, "s2");
     automaton.add_trans("s2", {}, "s2");
-
+    */
     std::cout << "Automaton: " << std::endl;
     std::cout << automaton << std::endl;
 
