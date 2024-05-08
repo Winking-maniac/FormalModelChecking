@@ -4,7 +4,9 @@ BDD realization for homework 2
 # Usage
 
 Build executable: make
+
 Build and run executable: make run
+
 Clean generates: make clean
 
 # Formula syntax
